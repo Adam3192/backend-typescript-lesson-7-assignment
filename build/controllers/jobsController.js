@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteJob = exports.createJob = exports.addJobPage = exports.getJobById = exports.getAllJobs = exports.defaultJobs = void 0;
+const Job_1 = require("../models/Job");
 const mysql_1 = __importDefault(require("mysql"));
 const db = mysql_1.default.createConnection({
     host: 'localhost',
@@ -23,63 +24,42 @@ const defaultJobs = (req, res, next) => {
     res.redirect('/jobs');
 };
 exports.defaultJobs = defaultJobs;
-const getAllJobs = (req, res, next) => {
-    let myQuery = `SELECT * FROM jobs`;
-    db.query(myQuery, (err, data, fields) => {
-        if (err) {
-            res.send(err);
-        }
-        res.render('all-jobs', {
-            jobList: data
-        });
-    });
+const getAllJobs = async (req, res, next) => {
+    let jobList = await Job_1.Job.findAll();
+    res.render('all-jobs', { jobList });
 };
 exports.getAllJobs = getAllJobs;
-const getJobById = (req, res, next) => {
+const getJobById = async (req, res, next) => {
     let jobId = req.params.jobId;
-    let myQuery = `SELECT * FROM jobs WHERE jobId='${jobId}' LIMIT 1`;
-    db.query(myQuery, (err, data, fields) => {
-        if (err) {
-            return res.send(err);
-        }
-        console.log(data);
-        if (data.length == 0) {
-            return res.status(404).render('error', {
-                message: "This is not the URL you are looking for!"
-            });
-        }
-        let foundJob = data[0];
-        res.render('job-detail', {
-            foundJob
-        });
-    });
+    let foundJob = await Job_1.Job.findByPk(jobId);
+    if (foundJob) {
+        res.render('job-detail', { foundJob });
+    }
+    else {
+        res.status(404).render('error', { message: 'job not found' });
+    }
 };
 exports.getJobById = getJobById;
 const addJobPage = (req, res, next) => {
     res.render('addJob');
 };
 exports.addJobPage = addJobPage;
-const createJob = (req, res, next) => {
+const createJob = async (req, res, next) => {
     let newJob = req.body;
-    let myQuery = `INSERT INTO jobs (companyName, jobTitle, description, yearsWorked) VALUES ('${newJob.companyName}', '${newJob.jobTitle}', '${newJob.description}', '${newJob.yearsWorked}')`;
-    db.query(myQuery, (err, data, fields) => {
-        if (err) {
-            return res.send(err);
-        }
-        console.log(data);
-        res.redirect('/jobs');
-    });
+    await Job_1.Job.create(newJob);
+    res.redirect('/jobs');
 };
 exports.createJob = createJob;
-const deleteJob = (req, res, next) => {
+const deleteJob = async (req, res, next) => {
     let jobId = req.params.jobId;
-    let myQuery = `DELETE FROM jobs WHERE jobId=${jobId}`;
-    db.query(myQuery, (err, data, fields) => {
-        if (err) {
-            return res.send(err);
-        }
-        console.log(data);
-        res.redirect('/jobs');
+    let deletedJob = await Job_1.Job.destroy({
+        where: { jobId: jobId }
     });
+    if (deletedJob) {
+        res.redirect('/jobs');
+    }
+    else {
+        res.status(404).render('error', { message: 'Cannot find job' });
+    }
 };
 exports.deleteJob = deleteJob;

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const jobRoutes_1 = __importDefault(require("./routes/jobRoutes"));
 const jobsController_1 = require("./controllers/jobsController");
+const models_1 = require("./models");
 const path_1 = __importDefault(require("path"));
 const morgan_1 = __importDefault(require("morgan"));
 const app = (0, express_1.default)();
@@ -24,5 +25,9 @@ app.use((req, res, next) => {
     res.status(404).render('error', {
         message: "This is not the URL you are looking for!"
     });
+});
+// Syncing our database
+models_1.db.sync().then(() => {
+    console.info("connected to the database!");
 });
 app.listen(3000);
